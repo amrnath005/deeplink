@@ -1,7 +1,7 @@
-"""Bot detection engine with 25+ crawler, scraper, and headless browser patterns."""
+"""Bot detection engine with 25+ crawler, scraper, headless browser patterns, and anonymizer risk scoring."""
 
 import re
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Dict, Any
 from pydantic import BaseModel
 
 
@@ -9,6 +9,10 @@ class BotCheckResult(BaseModel):
     is_bot: bool
     bot_score: float  # 0.0 (human) to 1.0 (certain bot)
     bot_label: str    # human, likely_human, crawler, bot, headless_browser
+    risk_score: float = 0.0
+    proxy_detected: bool = False
+    tor_detected: bool = False
+    vpn_detected: bool = False
 
 
 BOT_PATTERNS = [
@@ -53,10 +57,28 @@ BOT_PATTERNS = [
 ]
 
 
-def detect_bot(user_agent: Optional[str]) -> BotCheckResult:
-    """Evaluate User-Agent for bot indicators and assign bot confidence score."""
+def detect_bot(user_agent: Optional[str], headers: Optional[Dict[str, str]] = None) -> BotCheckResult:
+    """Evaluate User-Agent and HTTP headers for bot & anonymizer proxy/TOR indicators."""
+    headers_clean = {k.lower(): v for k, v in (headers or {}).items()}
+
+    tor_detected = "x-tor-exit-node" in headers_clean or "cf-connecting-ip-is-tor" in headers_clean
+    proxy_detected = "via" in headers_clean or "x-proxy-id" in headers_clean or "forwarded" in headers_clean
+
+    risk_score = 0.0
+    if tor_detected:
+        risk_score += 0.8
+    if proxy_detected:
+        risk_score += 0.4
+
     if not user_agent:
-        return BotCheckResult(is_bot=True, bot_score=0.9, bot_label="empty_user_agent")
+        return BotCheckResult(
+            is_bot=True,
+            bot_score=0.9,
+            bot_label="empty_user_agent",
+            risk_score=min(1.0, risk_score + 0.9),
+            proxy_detected=proxy_detected,
+            tor_detected=tor_detected,
+        )
 
     ua = user_agent.strip()
 
@@ -66,10 +88,16 @@ def detect_bot(user_agent: Optional[str]) -> BotCheckResult:
                 is_bot=score >= 0.7,
                 bot_score=score,
                 bot_label=name,
+                risk_score=min(1.0, risk_score + score),
+                proxy_detected=proxy_detected,
+                tor_detected=tor_detected,
             )
 
     return BotCheckResult(
         is_bot=False,
         bot_score=0.0,
         bot_label="human",
+        risk_score=min(1.0, risk_score),
+        proxy_detected=proxy_detected,
+        tor_detected=tor_detected,
     )

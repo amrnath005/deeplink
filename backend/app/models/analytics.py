@@ -10,7 +10,7 @@ from app.db.base import Base
 
 
 class AnalyticsEvent(Base):
-    """Rich visit analytics event entity (40+ data points)."""
+    """Rich visit analytics event entity (50+ data points)."""
 
     __tablename__ = "analytics_events"
 
@@ -39,15 +39,25 @@ class AnalyticsEvent(Base):
     device_type: Mapped[Optional[str]] = mapped_column(String(50), index=True, nullable=True)
     platform: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     language: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    languages: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
     screen_size: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     viewport: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    pixel_ratio: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     color_depth: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     orientation: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
 
     dark_mode: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    reduced_motion: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    high_contrast: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
     touch_support: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    max_touch_points: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     cookies_enabled: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    local_storage_enabled: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    session_storage_enabled: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    indexed_db_enabled: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    service_worker_support: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    webgpu_support: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
 
     referrer: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     utm_source: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
@@ -71,6 +81,9 @@ class AnalyticsEvent(Base):
 
     bot_score: Mapped[float] = mapped_column(Float, default=0.0)
     bot_label: Mapped[str] = mapped_column(String(50), default="unknown")
+    risk_score: Mapped[float] = mapped_column(Float, default=0.0)
+    proxy_detected: Mapped[bool] = mapped_column(Boolean, default=False)
+    tor_detected: Mapped[bool] = mapped_column(Boolean, default=False)
 
     redirect_time_ms: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     target_platform: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
