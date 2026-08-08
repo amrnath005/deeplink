@@ -1,12 +1,14 @@
 """Security utilities for JWT token creation, verification, and API Key hashing."""
 
+import os
 import hmac
 import hashlib
-from datetime import datetime, timedelta
+import secrets
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 from pydantic import BaseModel
 
-SECRET_KEY = "enterprise-super-secret-deeplink-platform-key-change-in-prod"
+SECRET_KEY = os.getenv("SECRET_KEY", "enterprise-super-secret-deeplink-platform-key-change-in-prod")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 
@@ -30,8 +32,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def generate_api_key() -> str:
     """Generate secure enterprise API key."""
-    import secret
-    return f"dlp_live_{secrets.token_hex(24)}" if 'secrets' in locals() else f"dlp_live_{hashlib.md5(str(datetime.utcnow()).encode()).hexdigest()}"
+    return f"dlp_live_{secrets.token_hex(24)}"
 
 
 def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
@@ -40,7 +41,7 @@ def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta]
     import base64
 
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": int(expire.timestamp())})
 
     header = {"alg": ALGORITHM, "typ": "JWT"}
